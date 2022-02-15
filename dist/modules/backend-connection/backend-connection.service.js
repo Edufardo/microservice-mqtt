@@ -1,0 +1,60 @@
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.BackendConnectionService = void 0;
+const common_1 = require("@nestjs/common");
+const microservices_1 = require("@nestjs/microservices");
+const backend_connection_constants_1 = require("./backend-connection.constants");
+let BackendConnectionService = class BackendConnectionService {
+    constructor() {
+        this.client = microservices_1.ClientProxyFactory.create(backend_connection_constants_1.MICROSERVICE_TO_BACKEND_CLIENT_MODULE_CONFIGURATION);
+    }
+    async onApplicationBootstrap() {
+        this.getConnectionToBackend();
+    }
+    async getConnectionToBackend() {
+        try {
+            await this.client.connect();
+        }
+        catch (error) {
+            const errorText = error.message;
+            console.log(errorText);
+            if (errorText.includes('ECONNREFUSED')) {
+                console.log('CONEXIÓN RECHAZADA POR EL BACKEND');
+            }
+            else if (errorText.includes('EADDRINUSE')) {
+                console.log('EL PUERTO YA ESTÁ EN USO EN EL SISTEMA POR OTRO PROCESO');
+            }
+            else {
+                console.log(errorText);
+            }
+        }
+    }
+    receiveTestMessage(message) {
+        console.log(message);
+        this.sendTestAlertToBackend('This is a message sent from Microservice to Backend.');
+        return true;
+    }
+    sendTestAlertToBackend(message) {
+        this.getConnectionToBackend();
+        return this.client
+            .emit(backend_connection_constants_1.BASE_MICROSERVICE_PATTERNS.MESSAGES_HANDLERS.SEND_ALERT, {
+            data: message,
+        })
+            .toPromise();
+    }
+};
+BackendConnectionService = __decorate([
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [])
+], BackendConnectionService);
+exports.BackendConnectionService = BackendConnectionService;
+//# sourceMappingURL=backend-connection.service.js.map
